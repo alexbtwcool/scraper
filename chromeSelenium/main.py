@@ -50,7 +50,7 @@ def next_step(message):
     user_id = message.from_user.id
 
     try:
-        main(message, message.text, chat_id)
+        main(message.text, chat_id)
         cur.execute('INSERT INTO users VALUES(%s, %s)', [user_id, message.text])
 
     except ValueError as ex:
@@ -62,7 +62,7 @@ def next_step(message):
 
 
 
-def find_record(message, chat_id):
+def find_record(chat_id):
     with open('file.html', 'r') as file:
         src = file.read()
 
@@ -70,15 +70,15 @@ def find_record(message, chat_id):
     items = soup.find_all('td', class_='wr-month-calendar-table__day-cell wr-month-calendar-table__day-cell--available')
 
     if len(items) == 0:
-        bot.reply_to(message, text='Записей нет. ')
+        bot.send_message(chat_id, text='Записей нет. ')
 
     else:
-        bot.reply_to(message, text= f'\nК врачу свободно {len(items)} или больше записей ')
+        bot.send_message(chat_id, text= f'\nК врачу свободно {len(items)} или больше записей ')
 
     return
 
 
-def main(message, url, chat_id):
+def main(url, chat_id):
 
     service = Service(
         executable_path='C:\\Users\\alexa\\PycharmProjects\\recordSCRAPER\\chromeSelenium\\chromedriver.exe')
@@ -94,7 +94,7 @@ def main(message, url, chat_id):
 
     with open('file.html', 'w') as file:
         file.write(driver.page_source)
-    find_record(message, chat_id)
+    find_record(chat_id)
     driver.close()
     driver.quit()
 
@@ -109,9 +109,14 @@ def delete(message):
 def aprnce_record():
 
     cur.execute('SELECT user_id FROM users')
-    all_users = cur.fetchall()
-    for user in users:
-        print(user)
+    users = cur.fetchall()
 
+    for user in users:
+        cur.execute('SELECT url FROM users WHERE user_id = %s', [user])
+        url = ''.join(cur.fetchone())
+        main(url, int(str(user)[1:-2]))
+
+
+aprnce_record()
 
 bot.polling()

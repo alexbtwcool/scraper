@@ -14,8 +14,10 @@ conn.autocommit = True
 def aprnce_record():
     cur.execute('SELECT user_id FROM users')
     users = cur.fetchall()
-    for user in users:
 
-        print(user)
+    for user in users:
+        print(int(str(user)[1:-2]))
+        cur.execute('SELECT url FROM users WHERE user_id = %s', [user])
+        print(''.join(cur.fetchone()))
 
 aprnce_record()
