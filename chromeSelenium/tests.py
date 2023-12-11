@@ -1,5 +1,6 @@
 import psycopg2
 from config import host, db_name, password, user
+import validators
 
 conn = psycopg2.connect(
     host=host,
@@ -20,4 +21,7 @@ def aprnce_record():
         cur.execute('SELECT url FROM users WHERE user_id = %s', [user])
         print(''.join(cur.fetchone()))
 
-aprnce_record()
+url = 'http'
+
+if not validators.url(url):
+    print('bad url')

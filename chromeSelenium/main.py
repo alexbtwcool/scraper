@@ -10,6 +10,8 @@ from telebot.types import Message
 from envparse import Env
 from config import host, db_name, password, user
 import psycopg2
+import validators
+import multiprocessing
 
 
 env = Env()
@@ -50,7 +52,6 @@ def next_step(message):
     user_id = message.from_user.id
 
     try:
-        main(message.text, chat_id)
         cur.execute('INSERT INTO users VALUES(%s, %s)', [user_id, message.text])
 
     except ValueError as ex:
@@ -70,9 +71,10 @@ def find_record(chat_id):
     items = soup.find_all('td', class_='wr-month-calendar-table__day-cell wr-month-calendar-table__day-cell--available')
 
     if len(items) == 0:
-        bot.send_message(chat_id, text='Записей нет. ')
+        pass
 
     else:
+        time.sleep(3)
         bot.send_message(chat_id, text= f'\nК врачу свободно {len(items)} или больше записей ')
 
     return
@@ -86,7 +88,7 @@ def main(url, chat_id):
 
     driver.get(url=url)
     driver.add_cookie(
-        {"name": "WR_SESSION", "value": "16a163f647bfc9bc2e2d06fe9af3ae0cf79e3de02-+E0jE1wp2YU1myLMtx/Gt2wgcrJCSXBDpBeUMU/mVw9qO/caQwyueNGy143tDMO9FHvK6rqciNJAwfN4mDZBaq0fz3tITRWjXGR/z6SvVEOdJ8v5BbokGOr8e7vS9xzK53ypGYYK9DFfxrG2Db8dNvjKeKYXkeJKutM1HMOBFymVeHqw9BHmlb8RhmEideHBKgUm6EvjIuG1KiA8paSBwMSWoeYzNB6P8I0TELMSAfE2cL2nbC9JdR76hZM4YReCHIfr0Mc+mcHneLEl6iyUTA5hcdoMzv7LTExGXNm9nF3vavT1tmpGDW1Uazb9FkikbjWeQ4of4N5d0XXE8Bgrbh988VxzYliEeHdk/cRFNDBROXu3WgP7NQfgfEJezXwmeFktgg8ypAKgXPspfHQA4byfN2LY7qDxScmaHXTojmUvLtfY79FsMU4k2e/MKPiicp4QIUkqQUtuDWT1Miuxopk="}
+        {"name": "WR_SESSION", "value": "32fb05772d6914ad25d07a8878b763030ef7bec42-eHXw47eGZZopNUNFuBGD4q/UBv3P3LOQAcBRpWmKyKsarRixqSuKDf6xrP7qVyHQP7YpphUZWDBiwuqRZA7ZFn41y3gsLGgLi4k0t/PBQvv8Ljyd2+k1a9vXK3VeBm7aJUiun75/jzn5DKufUKA9ytxL8ZZNMe1+C9GHs06YbQVaM6JnPiZip5b7Y1+EGas8sLTfvIHNKZm+E3DMFmBGRdoDtYRI4Ke9jPpRg0SDVEJT9CihSVHkQnBZXv/yLFU7/U7h5ugJ4bMCp4pJdvH9JYtCB5aud7PD8d0r4ojf+LOUt8jWQDkVMRtSBwSlApElD8PlNVlAbmKr4jSNi4R7ktCX1MVhSSlfikxXYU4WfpahhSDsEtpOei8cNYwKr1WqxGxAnU42KWLINPM/Nww7CHzwNWpeh/hMDJqerTUBSIfJaFGvhnV8jYEDERrosxmDHdpLhsXo97r2iZuhHf2Md5E="}
                     )
     time.sleep(5)
     driver.get(url=url)
@@ -106,17 +108,20 @@ def delete(message):
     cur.execute('DELETE FROM users WHERE user_id = %s', [message.from_user.id])
     bot.send_message(message.chat.id, text='Вы успешно удалили сборщик.')
 
-def aprnce_record():
+def aprnce_record(user):
 
-    cur.execute('SELECT user_id FROM users')
-    users = cur.fetchall()
-
-    for user in users:
-        cur.execute('SELECT url FROM users WHERE user_id = %s', [user])
-        url = ''.join(cur.fetchone())
-        main(url, int(str(user)[1:-2]))
+    cur.execute('SELECT url FROM users WHERE user_id = %s', [user])
+    url = ''.join(cur.fetchone())
+    main(url, int(str(user)[1:-2]))
 
 
-aprnce_record()
+cur.execute('SELECT user_id FROM users')
+users = cur.fetchall()
+
+
+if __name__ == '__main__':
+    p = multiprocessing.Pool(processes=2)
+    p.map(aprnce_record, users)
+
 
 bot.polling()
