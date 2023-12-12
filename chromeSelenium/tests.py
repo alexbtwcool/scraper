@@ -12,16 +12,10 @@ cur = conn.cursor()
 conn.autocommit = True
 
 
-def aprnce_record():
+def select_users():
     cur.execute('SELECT user_id FROM users')
     users = cur.fetchall()
+    return users
 
-    for user in users:
-        print(int(str(user)[1:-2]))
-        cur.execute('SELECT url FROM users WHERE user_id = %s', [user])
-        print(''.join(cur.fetchone()))
-
-url = 'http'
-
-if not validators.url(url):
-    print('bad url')
+select = select_users()
+print(select)

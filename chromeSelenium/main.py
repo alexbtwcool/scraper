@@ -108,20 +108,6 @@ def delete(message):
     cur.execute('DELETE FROM users WHERE user_id = %s', [message.from_user.id])
     bot.send_message(message.chat.id, text='Вы успешно удалили сборщик.')
 
-def aprnce_record(user):
-
-    cur.execute('SELECT url FROM users WHERE user_id = %s', [user])
-    url = ''.join(cur.fetchone())
-    main(url, int(str(user)[1:-2]))
-
-
-cur.execute('SELECT user_id FROM users')
-users = cur.fetchall()
-
-
-if __name__ == '__main__':
-    p = multiprocessing.Pool(processes=2)
-    p.map(aprnce_record, users)
 
 
 bot.polling()
