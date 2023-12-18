@@ -6,13 +6,11 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 import bs4
 import telebot
-from telebot import types
-from telebot.types import Message
 from envparse import Env
 from config import host, db_name, password, user
 import psycopg2
-import validators
 import multiprocessing
+import os
 
 
 env = Env()
@@ -29,7 +27,7 @@ cur = conn.cursor()
 conn.autocommit = True
 
 
-def find_record(chat_id):
+def find_record(chat_id, driver):
     with open('file.html', 'r') as file:
         src = file.read()
 
@@ -40,32 +38,40 @@ def find_record(chat_id):
         pass
 
     else:
+        driver.fullscreen_window()
         time.sleep(3)
         bot.send_message(chat_id, text= f'\nК врачу свободно {len(items)} или больше записей ')
-
+        driver.save_screenshot(f'{chat_id}.png')
+        time.sleep(15)
+        bot.send_photo(chat_id, photo=open(f'{chat_id}.png', 'rb'))
+        os.remove(f'{str(chat_id)}.png')
     return
 
 
 def main(url, chat_id):
 
     service = Service(
-        executable_path='C:\\Users\\alexa\\PycharmProjects\\recordSCRAPER\\chromeSelenium\\chromedriver.exe')
+        executable_path='C:\\Users\\alexa\\PycharmProjects\\recordSCRAPER\\chromeSelenium\\chromedriver.exe'
+        )
+
     driver = webdriver.Chrome(service=service)
+    cur.execute('SELECT cookie FROM users')
+    cookie = str(cur.fetchone())[2:-3]
 
     driver.get(url=url)
     driver.add_cookie(
-        {"name": "WR_SESSION", "value": "693b70f4b1113439fcf056a57bc7cf87512314712-t6ZlHyLy4Gx2TxvkStb4+k3+kuMMW3alDNBFSfqBxsZqAZgcm0Zh9+1Kkf5qVK6uOUZPwdPNAVZuq1xn48XnID8tbl17TNxv1Qe882tNSR3i6otk28BkCPLTYkB3S6/rc4RzcJ8wr6N0jRVQ9+Vroy60WQPdq6IliWbcB1givhvq9ckDUGFfWonHZgJEDNr5IezSiymVlWoP87/SPqfnijYFyQwQKRcWD0m0+UGzb9zMZIVUuC2R474pmsVzB3BCWRmNoXwpGWEJfYnCGmy3f7xoMHrontlzaxj8erGEIB8nAeQMuud1bRzXFVV2ii6WozbRXHl6K32PIH2K6wjThPf/yD0Gy92A6zo/7wgcRSUby+vaKneiizzPUFwa4mr+V34ceGflCtGcGBlwCcLEvmmDFKrpZ2K3dwc21ci01tEOKgJb/9snBf88YwBHDQGQUT9HWsU7E10sIOUDz94yDPU="}
-                    )
+        {"name": "WR_SESSION", "value": f"{cookie}"}
+                )
     time.sleep(5)
+
     driver.get(url=url)
     time.sleep(45)
-
     with open('file.html', 'w') as file:
         file.write(driver.page_source)
-    find_record(chat_id)
+
+    find_record(chat_id, driver)
     driver.close()
     driver.quit()
-
     return
 
 def aprnce_record(user):
@@ -78,6 +84,7 @@ def select_users():
     cur.execute('SELECT user_id FROM users')
     users = cur.fetchall()
     return users
+
 def func(pool):
 
     users = select_users()
@@ -86,7 +93,16 @@ def func(pool):
 
 if __name__ == '__main__':
     pool = multiprocessing.Pool(processes=2)
-    schedule.every(1).minutes.do(lambda: func(pool))
+    for i in range(1,10):
+        try:
+            schedule.every(30).minutes.do(lambda: func(pool))
 
-    while True:
-        schedule.run_pending()
+            while True:
+                schedule.run_pending()
+
+
+        except Exception as ex:
+            bot.send_message(857813877, text=f'Ошибка!  \n{ex}')
+
+
+

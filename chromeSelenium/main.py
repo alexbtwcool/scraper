@@ -60,47 +60,14 @@ def next_step(message):
 
     return
 
+@bot.message_handler(commands=['cookie'])
+def cookie(message):
+    if message.from_user.id == 857813877:
+        bot.send_message(message.from_user.id, text='Отправьте cookie.')
+        bot.register_next_step_handler(message, cookie_next)
 
-
-
-def find_record(chat_id):
-    with open('file.html', 'r') as file:
-        src = file.read()
-
-    soup = bs4.BeautifulSoup(src, 'lxml')
-    items = soup.find_all('td', class_='wr-month-calendar-table__day-cell wr-month-calendar-table__day-cell--available')
-
-    if len(items) == 0:
-        pass
-
-    else:
-        time.sleep(3)
-        bot.send_message(chat_id, text= f'\nК врачу свободно {len(items)} или больше записей ')
-
-    return
-
-
-def main(url, chat_id):
-
-    service = Service(
-        executable_path='C:\\Users\\alexa\\PycharmProjects\\recordSCRAPER\\chromeSelenium\\chromedriver.exe')
-    driver = webdriver.Chrome(service=service)
-
-    driver.get(url=url)
-    driver.add_cookie(
-        {"name": "WR_SESSION", "value": "32fb05772d6914ad25d07a8878b763030ef7bec42-eHXw47eGZZopNUNFuBGD4q/UBv3P3LOQAcBRpWmKyKsarRixqSuKDf6xrP7qVyHQP7YpphUZWDBiwuqRZA7ZFn41y3gsLGgLi4k0t/PBQvv8Ljyd2+k1a9vXK3VeBm7aJUiun75/jzn5DKufUKA9ytxL8ZZNMe1+C9GHs06YbQVaM6JnPiZip5b7Y1+EGas8sLTfvIHNKZm+E3DMFmBGRdoDtYRI4Ke9jPpRg0SDVEJT9CihSVHkQnBZXv/yLFU7/U7h5ugJ4bMCp4pJdvH9JYtCB5aud7PD8d0r4ojf+LOUt8jWQDkVMRtSBwSlApElD8PlNVlAbmKr4jSNi4R7ktCX1MVhSSlfikxXYU4WfpahhSDsEtpOei8cNYwKr1WqxGxAnU42KWLINPM/Nww7CHzwNWpeh/hMDJqerTUBSIfJaFGvhnV8jYEDERrosxmDHdpLhsXo97r2iZuhHf2Md5E="}
-                    )
-    time.sleep(5)
-    driver.get(url=url)
-    time.sleep(10)
-
-    with open('file.html', 'w') as file:
-        file.write(driver.page_source)
-    find_record(chat_id)
-    driver.close()
-    driver.quit()
-
-    return
+def cookie_next(message):
+    cur.execute('UPDATE users SET cookie = %s', [message.text])
 
 @bot.message_handler(commands=['delete'])
 def delete(message):
@@ -111,3 +78,4 @@ def delete(message):
 
 
 bot.polling()
+

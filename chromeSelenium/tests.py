@@ -1,6 +1,18 @@
-import psycopg2
+from selenium import webdriver
+import time
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
+import bs4
+import telebot
+from telebot import types
+from telebot.types import Message
+from envparse import Env
 from config import host, db_name, password, user
+import psycopg2
 import validators
+import multiprocessing
+
 
 conn = psycopg2.connect(
     host=host,
@@ -12,10 +24,9 @@ cur = conn.cursor()
 conn.autocommit = True
 
 
-def select_users():
-    cur.execute('SELECT user_id FROM users')
-    users = cur.fetchall()
-    return users
+service = Service(
+        executable_path='C:\\Users\\alexa\\PycharmProjects\\recordSCRAPER\\chromeSelenium\\chromedriver.exe')
 
-select = select_users()
-print(select)
+driver = webdriver.Chrome(service=service)
+driver.get('https://www.google.com/')
+
