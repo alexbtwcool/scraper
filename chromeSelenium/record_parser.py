@@ -74,16 +74,19 @@ def main(url, chat_id):
     driver.quit()
     return
 
+
 def aprnce_record(user):
 
     cur.execute('SELECT url FROM users WHERE user_id = %s', [user])
     url = ''.join(cur.fetchone())
     main(url, int(str(user)[1:-2]))
 
+
 def select_users():
     cur.execute('SELECT user_id FROM users')
     users = cur.fetchall()
     return users
+
 
 def func(pool):
 
@@ -99,7 +102,6 @@ if __name__ == '__main__':
 
             while True:
                 schedule.run_pending()
-
 
         except Exception as ex:
             bot.send_message(857813877, text=f'Ошибка!  \n{ex}')
