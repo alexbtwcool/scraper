@@ -28,5 +28,4 @@ service = Service(
         executable_path='C:\\Users\\alexa\\PycharmProjects\\recordSCRAPER\\chromeSelenium\\chromedriver.exe')
 
 driver = webdriver.Chrome(service=service)
-driver.get('https://www.google.com/')
-
+driver.get

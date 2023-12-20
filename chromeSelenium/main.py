@@ -12,6 +12,7 @@ from config import host, db_name, password, user
 import psycopg2
 import validators
 import multiprocessing
+import requests
 
 
 env = Env()
@@ -27,41 +28,57 @@ conn = psycopg2.connect(
 cur = conn.cursor()
 conn.autocommit = True
 
+dentist_fk = 1
+orthopedist_fk = 2
+cardiologist_fk = 3
+
 
 @bot.message_handler(commands=['start'])
 def start(message):
     print(type(message.chat.id))
     user_id = message.from_user.id
-    bot.reply_to(message, text=f"""Привет, уважаемый пользователь. \n
-Для того, чтобы начать попытку забрать свободную запись введите команду - /url""")
+    bot.reply_to(message, text=f"""Здравствуй, уважаемый пользователь. 🌼 \n
+Для того, чтобы начать попытку забрать свободную запись введите команду — /collecting""")
 
 
-@bot.message_handler(commands=['url'])
-def url(message):
+@bot.message_handler(commands=['collecting'])
+def collecting(message):
 
     cur.execute('SELECT user_id FROM users WHERE user_id = %s', [message.from_user.id])
     if cur.fetchone() is None:
-        bot.send_message(message.chat.id, text=f'''Чтобы начать парсить отправьте мне ссылку со страницы нужного врача.
-        Пример той страницы, какая будет корректна:''')
-        bot.send_photo(message.chat.id, photo=open('пример.png', 'rb'))
-        bot.send_message(message.chat.id, text="""⚠️ БУДЬТЕ ВНИМАТЕЛЬНЫ!
-        Сборник записей будет работать некорректно, если Вы укажете неправильную ссылку!""")
-        bot.register_next_step_handler(message, next_step)
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        dentist = types.KeyboardButton("🦷 Стоматолог (детский)")
+        orthopedist = types.KeyboardButton('🤕 Травматолог/ортопед')
+        cardiologist = types.KeyboardButton('💓 Кардиолог')
+        markup.add(dentist, orthopedist, cardiologist)
+        bot.send_message(message.chat.id, text=f'''Теперь выберите в меню интересующего Вас врача 🌱''', reply_markup=markup)
+        bot.register_next_step_handler(message, next_step, dentist, orthopedist, cardiologist)
     else:
-        bot.send_message(message.chat.id, text='Вы уже поставили сборник записей. Желаете его удалить? \n/delete')
+        bot.send_message(message.chat.id, text='🗑️ Вы уже поставили сборник записей. Желаете его удалить? — /delete')
 
 
-def next_step(message):
+def next_step(message, dentist, orthopedist, cardiologist):
 
     chat_id = message.chat.id
     user_id = message.from_user.id
 
-    try:
-        cur.execute('INSERT INTO users VALUES(%s, %s)', [user_id, message.text])
+    if message.text == dentist.text:
+        cur.execute('INSERT INTO users (user_id, fk_doctor_url) VALUES (%s, %s)', [user_id, dentist_fk])
+        bot.send_message(user_id, text=f'Планировщик установлен на врача:\n\n{dentist.text}')
 
-    except ValueError as ex:
-        bot.send_message(chat_id, text='Что-то пошло не так... Убедитесь корректен ли URL-адрес.')
-        print(ex)
+    elif message.text == orthopedist.text:
+        cur.execute('INSERT INTO users (user_id, fk_doctor_url) VALUES (%s, %s)', [user_id, orthopedist_fk])
+        bot.send_message(user_id, text=f'Планировщик установлен на врача:\n\n{orthopedist.text}')
+
+    elif message.text == cardiologist.text:
+        cur.execute('INSERT INTO users (user_id, fk_doctor_url) VALUES (%s, %s)', [user_id, cardiologist_fk])
+        bot.send_message(user_id, text=f'Планировщик установлен на врача:\n\n{cardiologist.text}')
+
+    else:
+        bot.send_message(user_id, text='⚠️ Используйте меню с кнопками!')
+        bot.send_photo(user_id, photo=open('markup.png', 'rb'))
+
+    bot.send_message(chat_id, text='~~ Бот начал сбор информации ~~')
 
     return
 
@@ -74,15 +91,22 @@ def cookie(message):
 
 
 def cookie_next(message):
-    cur.execute('UPDATE users SET cookie = %s', [message.text])
+    cur.execute('UPDATE users SET cookie = %s WHERE user_id = 857813877', [message.text])
+    bot.send_message(message.from_user.id, text='Успешно.')
 
 
 @bot.message_handler(commands=['delete'])
 def delete(message):
 
     cur.execute('DELETE FROM users WHERE user_id = %s', [message.from_user.id])
-    bot.send_message(message.chat.id, text='Вы успешно удалили сборщик.')
+    bot.send_message(message.chat.id, text='''Вы успешно удалили сборщик.
+Желаете поставить новый сборщик? — /collecting''')
 
 
-bot.polling()
+while True:
+    try:
+        bot.polling()
 
+    except Exception as ex:
+        requests.get(f'https://api.telegram.org/bot6631477583:AAFlasFHHf6dMmFMhZPiUbk4p47exasYbf4'
+                     f'/sendMessage?chat_id=857813877&text={ex}')

@@ -55,7 +55,7 @@ def main(url, chat_id):
         )
 
     driver = webdriver.Chrome(service=service)
-    cur.execute('SELECT cookie FROM users')
+    cur.execute('SELECT cookie FROM users WHERE user_id = 857813877')
     cookie = str(cur.fetchone())[2:-3]
 
     driver.get(url=url)
@@ -77,9 +77,11 @@ def main(url, chat_id):
 
 def aprnce_record(user):
 
-    cur.execute('SELECT url FROM users WHERE user_id = %s', [user])
+    cur.execute('''SELECT url FROM users JOIN doctors ON fk_doctor_url = id 
+    JOIN doctors_urls ON fk_doctor = fk_doctor_url WHERE user_id = %s''', [user])
     url = ''.join(cur.fetchone())
-    main(url, int(str(user)[1:-2]))
+    chat_id = int(str(user)[1:-2])
+    main(url, chat_id)
 
 
 def select_users():
@@ -96,6 +98,7 @@ def func(pool):
 
 if __name__ == '__main__':
     pool = multiprocessing.Pool(processes=2)
+    func(pool)
     for i in range(1,10):
         try:
             schedule.every(30).minutes.do(lambda: func(pool))
@@ -107,4 +110,4 @@ if __name__ == '__main__':
             bot.send_message(857813877, text=f'Ошибка!  \n{ex}')
 
 
-
+# SELECT url, user_id FROM users JOIN doctors ON fk_doctor_url = id JOIN doctors_urls ON fk_doctor = fk_doctor_url
